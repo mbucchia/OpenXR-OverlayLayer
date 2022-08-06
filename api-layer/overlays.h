@@ -639,7 +639,9 @@ struct OverlaySwapchain
     bool                    waited;
     int                     width;
     int                     height;
+    int                     arraySize;
     DXGI_FORMAT             format;
+    XrSwapchainUsageFlags   usage;
 
 
     OverlaySwapchain(XrSwapchain sc, size_t count, const XrSwapchainCreateInfo* createInfo) :
@@ -649,7 +651,9 @@ struct OverlaySwapchain
         waited(false),
         width(createInfo->width),
         height(createInfo->height),
-        format(static_cast<DXGI_FORMAT>(createInfo->format))
+        arraySize(createInfo->arraySize),
+        format(static_cast<DXGI_FORMAT>(createInfo->format)),
+        usage(createInfo->usageFlags)
     {
     }
     bool CreateTextures(XrInstance instance, ID3D11Device *d3d11, DWORD mainProcessId);

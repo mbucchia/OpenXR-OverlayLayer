@@ -837,11 +837,18 @@ bool OverlaySwapchain::CreateTextures(XrInstance instance, ID3D11Device *d3d11, 
         D3D11_TEXTURE2D_DESC desc;
         desc.Width = width;
         desc.Height = height;
-        desc.MipLevels = desc.ArraySize = 1;
+        desc.MipLevels = 1;
+        desc.ArraySize = arraySize;
         desc.SampleDesc.Count = 1;
         desc.SampleDesc.Quality = 0;
         desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        if (usage & XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT) {
+            desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+        }
+        if (usage & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            desc.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+        }
         desc.CPUAccessFlags = 0;
         desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_NTHANDLE | D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 
@@ -3187,7 +3194,11 @@ XrResult OverlaysLayerReleaseSwapchainImageMainAsOverlay(ConnectionToOverlay::Pt
     sharedTexture->GetDevice(&d3dDevice);
     ID3D11DeviceContext* d3dContext;
     d3dDevice->GetImmediateContext(&d3dContext);
-    d3dContext->CopyResource(mainAsOverlaySwapchain->swapchainImages[which], sharedTexture);
+    D3D11_TEXTURE2D_DESC textureDesc;
+    mainAsOverlaySwapchain->swapchainImages[which]->GetDesc(&textureDesc);
+    for (int i = 0; i < textureDesc.ArraySize; i++) {
+        d3dContext->CopySubresourceRegion(mainAsOverlaySwapchain->swapchainImages[which], i, 0, 0, 0, sharedTexture, i, nullptr);
+    }
 
     auto releaseInfoCopy = GetSharedCopyHandlesRestored(swapchainInfo->parentInstance, "xrReleaseSwapchainImage", releaseInfo);
 
