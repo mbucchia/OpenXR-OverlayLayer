@@ -414,6 +414,8 @@ supported_commands = [
     "xrEnumerateBoundSourcesForAction",
     "xrGetInputSourceLocalizedName",
     "xrGetD3D11GraphicsRequirementsKHR",
+    "xrConvertTimeToWin32PerformanceCounterKHR",
+    "xrConvertWin32PerformanceCounterToTimeKHR",
     "xrSetDebugUtilsObjectNameEXT",
     "xrCreateDebugUtilsMessengerEXT",
     "xrDestroyDebugUtilsMessengerEXT",

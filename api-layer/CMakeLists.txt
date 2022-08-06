@@ -150,6 +150,7 @@ if (MSVC)
 endif ()
 
 if(WIN32)
+    add_definitions(-DXR_USE_PLATFORM_WIN32)
     add_definitions(-DXR_USE_GRAPHICS_API_D3D11)
     add_definitions(-DXR_USE_GRAPHICS_API_D3D12)
 endif()
