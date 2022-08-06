@@ -2621,6 +2621,67 @@ XrResult OverlaysLayerDestroySessionOverlay(XrInstance instance, XrSession sessi
     return result;
 }
 
+XrResult OverlaysLayerDestroySessionMain(XrInstance parentInstance, XrSession session)
+{
+    auto synchronizeEveryProcLock = gSynchronizeEveryProc ? std::unique_lock<std::recursive_mutex>(gSynchronizeEveryProcMutex) : std::unique_lock<std::recursive_mutex>();
+
+    XrResult result = XR_SUCCESS;
+
+    auto sessionInfo = OverlaysLayerGetHandleInfoFromXrSession(session);
+
+    // restore the actual handle
+    XrSession localHandleStore = session;
+    session = sessionInfo->actualHandle;
+
+    result = sessionInfo->downchain->DestroySession(session);
+
+    if (result == XR_SUCCESS) {
+        // extra cleanup of the instance needed.
+        auto instanceInfo = OverlaysLayerGetHandleInfoFromXrInstance(sessionInfo->parentInstance);
+
+        for (auto& action : sessionInfo->placeholderActionNames) {
+            instanceInfo->downchain->DestroyAction(action.first);
+        }
+        instanceInfo->downchain->DestroyActionSet(sessionInfo->placeholderActionSet);
+    }
+
+    // put the local handle back
+    session = localHandleStore;
+
+    return result;
+}
+
+XrResult OverlaysLayerDestroySession(XrSession session)
+{
+    try {
+        auto sessionInfo = OverlaysLayerGetHandleInfoFromXrSession(session);
+
+        bool isProxied = sessionInfo->isProxied;
+        XrResult result;
+        if (isProxied) {
+            result = OverlaysLayerDestroySessionOverlay(sessionInfo->parentInstance, session);
+        }
+        else {
+            result = OverlaysLayerDestroySessionMain(sessionInfo->parentInstance, session);
+        }
+
+        sessionInfo->Destroy();
+
+        if (XR_SUCCEEDED(result)) {
+            // XXX tell overlay app that session was lost
+        }
+
+        return result;
+    }
+    catch (const OverlaysLayerXrException exc) {
+        return exc.result();
+    }
+    catch (const std::bad_alloc& e) {
+        OverlaysLayerLogMessage(XR_NULL_HANDLE, XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT, "xrDestroySession", OverlaysLayerNoObjectInfo, e.what());
+        return XR_ERROR_OUT_OF_MEMORY;
+    }
+}
+
 XrResult OverlaysLayerEnumerateSwapchainFormatsMainAsOverlay(ConnectionToOverlay::Ptr connection, XrSession session, uint32_t formatCapacityInput, uint32_t* formatCountOutput, int64_t* formats)
 {
     auto synchronizeEveryProcLock = gSynchronizeEveryProc ? std::unique_lock<std::recursive_mutex>(gSynchronizeEveryProcMutex) : std::unique_lock<std::recursive_mutex>();

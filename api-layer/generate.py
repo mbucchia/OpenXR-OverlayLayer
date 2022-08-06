@@ -348,6 +348,7 @@ manually_implemented_commands = [
     "xrStopHapticFeedback",
     "xrLocateSpace",
     "xrCreateSession",
+    "xrDestroySession",
     "xrPollEvent",
     "xrEndFrame",
     "xrCreateActionSet",
@@ -596,11 +597,6 @@ after_downchain_main["xrBeginSession"] = """
         auto l = mainSession->GetLock();
         mainSession->sessionState.DoCommand(OpenXRCommand::BEGIN_SESSION);
     }
-"""
-
-after_downchain_main["xrDestroySession"] = """
-    // XXX tell overlay app that session was lost
-
 """
 
 after_downchain_main["xrEndSession"] = """
