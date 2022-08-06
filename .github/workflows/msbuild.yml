@@ -1,0 +1,60 @@
+name: MSBuild
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    environment: build-and-sign
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v2
+    
+    - name: Checkout submodules
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: git submodule update --init
+
+    - name: Setup DevEnv
+      uses: seanmiddleditch/gha-setup-vsdevenv@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Setup Python
+      uses: actions/setup-python@v2.3.1
+      with:
+        python-version: 3.8
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        $ROOT = $PWD -replace '\\', '/'
+  
+        # Build the Khronos SDK.
+        md build\sdk
+        cd build\sdk
+        cmake -DCMAKE_SYSTEM_VERSION=10.0.19041.0 ..\..\external\OpenXR-SDK-Source
+        devenv.com OPENXR.sln /Build Release
+        cd ..\..
+
+        # Build the API layer.
+        md build\api-layer
+        cd build\api-layer
+        cmake -DCMAKE_SYSTEM_VERSION=10.0.19041.0 -DOPENXR_SDK_SOURCE_ROOT="${ROOT}/external/OpenXR-SDK-Source" -DOPENXR_LIB_DIR="${ROOT}/build/sdk/src/loader/Release" -DOPENXR_SDK_BUILD_DIR="${ROOT}/build/sdk" ..\..
+        devenv.com XR_overlay.sln /Build Release        
+        cd ..\..
+
+    - name: Publish
+      uses: actions/upload-artifact@v2
+      with:
+        name: XR_EXTX_overlay
+        path: |
+          build\api-layer\api-layer\xr_extx_overlay.dll
+          api-layer\xr_extx_overlay.json
