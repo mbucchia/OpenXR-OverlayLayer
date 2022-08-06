@@ -40,10 +40,10 @@ if(NOT OPENXR_LIB_DIR)
     )
 endif()
 
-if(NOT DEFINED OPENXR_SDK_BUILD_SUBDIR)
+if(NOT DEFINED OPENXR_SDK_BUILD_DIR)
     message(
         FATAL_ERROR
-        "Set OPENXR_SDK_BUILD_SUBDIR to build subdirectory"
+        "Set OPENXR_SDK_BUILD_DIR to build directory"
     )
 endif()
 
@@ -61,7 +61,8 @@ set(OPENXR_INCLUDE_DIR ${OPENXR_SDK_SOURCE_ROOT}/include/openxr)
 
 project(XR_overlay)
 
-add_subdirectory(overlay-sample)
+# Disable the sample code to remove the dependency on FreeImage.
+# add_subdirectory(overlay-sample)
 add_subdirectory(api-layer)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

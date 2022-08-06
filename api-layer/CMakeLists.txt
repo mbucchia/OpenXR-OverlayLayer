@@ -95,8 +95,8 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release"
     CACHE STRING "Configuration types" FORCE)
 
 add_library(xr_extx_overlay SHARED
-    ${OPENXR_SDK_SOURCE_ROOT}/${OPENXR_SDK_BUILD_SUBDIR}/src/xr_generated_dispatch_table.h
-    ${OPENXR_SDK_SOURCE_ROOT}/${OPENXR_SDK_BUILD_SUBDIR}/src/xr_generated_dispatch_table.c
+    ${OPENXR_SDK_BUILD_DIR}/src/xr_generated_dispatch_table.h
+    ${OPENXR_SDK_BUILD_DIR}/src/xr_generated_dispatch_table.c
     ${OPENXR_SDK_SOURCE_ROOT}/src/common/hex_and_handles.h
     overlays.cpp
     ${GENERATED_OUTPUT}
@@ -108,11 +108,11 @@ target_include_directories(xr_extx_overlay
     ${CMAKE_CURRENT_SOURCE_DIR}
 
     # for OpenXR headers
-    ${OPENXR_SDK_SOURCE_ROOT}/${OPENXR_SDK_BUILD_SUBDIR}/include
+    ${OPENXR_SDK_BUILD_DIR}/include
     ${OPENXR_INCLUDE_DIR}
 
     # for generated dispatch table
-    ${OPENXR_SDK_SOURCE_ROOT}/${OPENXR_SDK_BUILD_SUBDIR}/src
+    ${OPENXR_SDK_BUILD_DIR}/src
 
     # for target-specific generated files
     ${CMAKE_CURRENT_SOURCE_DIR}
