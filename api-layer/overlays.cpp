@@ -1258,18 +1258,44 @@ XrResult OverlaysLayerXrCreateApiLayerInstance(const XrInstanceCreateInfo *insta
         return XR_ERROR_INITIALIZATION_FAILED;
     }
 
+    // Look for useful extensions we'd like to enable.
+    bool hasPerformanceCounterExt = false;
+	{
+        PFN_xrEnumerateInstanceExtensionProperties xrEnumerateInstanceExtensionProperties = nullptr;
+        if (XR_SUCCEEDED(apiLayerInfo->nextInfo->nextGetInstanceProcAddr(
+            XR_NULL_HANDLE,
+            "xrEnumerateInstanceExtensionProperties",
+            reinterpret_cast<PFN_xrVoidFunction*>(&xrEnumerateInstanceExtensionProperties)))) {
+            uint32_t extensionsCount = 0;
+            xrEnumerateInstanceExtensionProperties(nullptr, 0, &extensionsCount, nullptr);
+            std::vector<XrExtensionProperties> extensions(extensionsCount, { XR_TYPE_EXTENSION_PROPERTIES });
+            xrEnumerateInstanceExtensionProperties(nullptr, extensionsCount, &extensionsCount, extensions.data());
+            for (auto extension : extensions) {
+                const std::string extensionName(extension.extensionName);
+
+                if (extensionName == XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME) {
+                    hasPerformanceCounterExt = true;
+                }
+            }
+        }
+	}
+
     // Copy the contents of the layer info struct, but then move the next info up by
     // one slot so that the next layer gets information.
     memcpy(&new_api_layer_info, apiLayerInfo, sizeof(XrApiLayerCreateInfo));
     new_api_layer_info.nextInfo = apiLayerInfo->nextInfo->next;
 
     // Remove XR_EXTX_overlay from the extension list if requested
-    const char** extensionNamesMinusOverlay = new const char*[instanceCreateInfo->enabledExtensionCount];
+    const char** extensionNamesMinusOverlay = new const char*[instanceCreateInfo->enabledExtensionCount + (hasPerformanceCounterExt ? 1 : 0)];
     uint32_t extensionCountMinusOverlay = 0;
     for(uint32_t i = 0; i < instanceCreateInfo->enabledExtensionCount; i++) {
         if(strncmp(instanceCreateInfo->enabledExtensionNames[i], XR_EXTX_OVERLAY_EXTENSION_NAME, strlen(XR_EXTX_OVERLAY_EXTENSION_NAME)) != 0) {
             extensionNamesMinusOverlay[extensionCountMinusOverlay++] = instanceCreateInfo->enabledExtensionNames[i];
         }
+    }
+    // Add the extensions that our overlay app mak require.
+    if (hasPerformanceCounterExt) {
+        extensionNamesMinusOverlay[extensionCountMinusOverlay++] = XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME;
     }
 
     XrInstanceCreateInfo createInfoMinusOverlays = *instanceCreateInfo;
@@ -1285,14 +1311,14 @@ XrResult OverlaysLayerXrCreateApiLayerInstance(const XrInstanceCreateInfo *insta
     XrResult result = next_create_api_layer_instance(&createInfoMinusOverlays, &new_api_layer_info, &returned_instance);
     *instance = returned_instance;
 
-    delete[] extensionNamesMinusOverlay;
-
     // Create the dispatch table to the next levels
     std::shared_ptr<XrGeneratedDispatchTable> next_dispatch = std::make_shared<XrGeneratedDispatchTable>();
     GeneratedXrPopulateDispatchTable(next_dispatch.get(), returned_instance, next_get_instance_proc_addr);
 
     OverlaysLayerXrInstanceHandleInfo::Ptr instanceInfo = std::make_shared<OverlaysLayerXrInstanceHandleInfo>(next_dispatch);
-    instanceInfo->createInfo = reinterpret_cast<XrInstanceCreateInfo*>(CopyXrStructChainWithMalloc(*instance, instanceCreateInfo));
+    instanceInfo->createInfo = reinterpret_cast<XrInstanceCreateInfo*>(CopyXrStructChainWithMalloc(*instance, &createInfoMinusOverlays));
+
+    delete[] extensionNamesMinusOverlay;
 
     // Create XrPaths for well-known strings.  We can use the compile-time fixed string enums to pass strings and paths over RPC
     // XXX This should be on CreateInstance in the instance info
@@ -3257,7 +3283,7 @@ XrResult OverlaysLayerReleaseSwapchainImageMainAsOverlay(ConnectionToOverlay::Pt
     d3dDevice->GetImmediateContext(&d3dContext);
     D3D11_TEXTURE2D_DESC textureDesc;
     mainAsOverlaySwapchain->swapchainImages[which]->GetDesc(&textureDesc);
-    for (int i = 0; i < textureDesc.ArraySize; i++) {
+    for (int i = 0; i < (int)textureDesc.ArraySize; i++) {
         d3dContext->CopySubresourceRegion(mainAsOverlaySwapchain->swapchainImages[which], i, 0, 0, 0, sharedTexture, i, nullptr);
     }
 
