@@ -50,6 +50,7 @@ jobs:
         cmake -DCMAKE_SYSTEM_VERSION=10.0.19041.0 -DOPENXR_SDK_SOURCE_ROOT="${ROOT}/external/OpenXR-SDK-Source" -DOPENXR_LIB_DIR="${ROOT}/build/sdk/src/loader/Release" -DOPENXR_SDK_BUILD_DIR="${ROOT}/build/sdk" ..\..
         devenv.com XR_overlay.sln /Build Release        
         cd ..\..
+        cp api-layer\xr_extx_overlay.json build\api-layer\api-layer
 
     - name: Publish
       uses: actions/upload-artifact@v2
@@ -57,4 +58,4 @@ jobs:
         name: XR_EXTX_overlay
         path: |
           build\api-layer\api-layer\xr_extx_overlay.dll
-          api-layer\xr_extx_overlay.json
+          build\api-layer\api-layer\xr_extx_overlay.json
